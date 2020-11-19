@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,11 +21,38 @@ namespace WebAPITemperature.Controllers
             repository = MemoryRepository.GetInstance();
         }
 
+        //// GET: api/Temperature
+        //[HttpGet]
+        //public ActionResult<List<Temperature>> Get()
+        //{
+        //    return repository.Temperatures;
+        //}
+        
         // GET: api/Temperature
-        [HttpGet]
-        public ActionResult<List<Temperature>> Get()
+        [HttpGet(Name ="GetThreeLatest")]
+        public ActionResult<List<Temperature>> GetThreeLatest()
         {
+            int max = repository.Temperatures.Count();
+            if (max >= 3)
+            {
+                return repository.Temperatures.GetRange(max - 3, 3);
+            }
+
             return repository.Temperatures;
+        }
+        // GET: api/Temperature/"Date"
+        [HttpGet("{year, month, day}")]
+        public ActionResult<List<Temperature>> GetByDate(int year, int month, int day)
+        {
+            var date = new DateTime(year, month, day);
+            return repository.Temperatures.Where(t => t.Date.Day == date.Day && t.Date.Month == date.Month && t.Date.Year == date.Year).ToList();
+        }
+        
+        // GET: api/Temperature/"Date"
+        [HttpGet("{date}")]
+        public ActionResult<List<Temperature>> GetByDate(DateTime date)
+        {
+            return repository.Temperatures.Where(t => t.Date.Day == date.Day && t.Date.Month == date.Month && t.Date.Year == date.Year).ToList();
         }
 
         // GET: api/Temperature/5
