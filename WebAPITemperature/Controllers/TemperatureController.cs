@@ -22,14 +22,14 @@ namespace WebAPITemperature.Controllers
         }
 
         //// GET: api/Temperature
-        //[HttpGet]
-        //public ActionResult<List<Temperature>> Get()
-        //{
-        //    return repository.Temperatures;
-        //}
-        
+        [HttpGet(Name = "Get")]
+        public ActionResult<List<Temperature>> Get()
+        {
+            return repository.Temperatures;
+        }
+
         // GET: api/Temperature
-        [HttpGet(Name ="GetThreeLatest")]
+        [HttpGet(Name = "GetThreeLatest")]
         public ActionResult<List<Temperature>> GetThreeLatest()
         {
             int max = repository.Temperatures.Count();
@@ -41,22 +41,21 @@ namespace WebAPITemperature.Controllers
             return repository.Temperatures;
         }
         // GET: api/Temperature/"Date"
-        [HttpGet("{year, month, day}")]
-        public ActionResult<List<Temperature>> GetByDate(int year, int month, int day)
+        [HttpGet("{from}/{to}")]
+        public ActionResult<List<Temperature>> GetByInterval(DateTime from, DateTime to)
         {
-            var date = new DateTime(year, month, day);
-            return repository.Temperatures.Where(t => t.Date.Day == date.Day && t.Date.Month == date.Month && t.Date.Year == date.Year).ToList();
+            return repository.Temperatures.Where(t => t.Date >= from && t.Date <= to ).ToList();
         }
-        
-        // GET: api/Temperature/"Date"
-        [HttpGet("{date}")]
-        public ActionResult<List<Temperature>> GetByDate(DateTime date)
+
+        //// GET: api/Temperature/"Date"
+        [HttpGet("{day, month, year}")]
+        public ActionResult<List<Temperature>> GetByDate(int day, int month, int year)
         {
-            return repository.Temperatures.Where(t => t.Date.Day == date.Day && t.Date.Month == date.Month && t.Date.Year == date.Year).ToList();
+            return repository.Temperatures.Where(t => t.Date.Day == day && t.Date.Month == month && t.Date.Year == year).ToList();
         }
 
         // GET: api/Temperature/5
-        [HttpGet("{id}", Name = "Get")]
+        [HttpGet("{id}", Name = "GetById")]
         public ActionResult<Temperature> Get(int id)
         {
             var item = repository[id];
