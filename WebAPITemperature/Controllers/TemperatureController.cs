@@ -6,7 +6,9 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
+using WebAPITemperature.Data;
 
 namespace WebAPITemperature.Controllers
 {
@@ -14,56 +16,58 @@ namespace WebAPITemperature.Controllers
     [ApiController]
     public class TemperatureController : ControllerBase
     {
-        private MemoryRepository repository;
+        private readonly ApplicationDbContext _dbContext;
 
-        public TemperatureController()
+        public TemperatureController(ApplicationDbContext dbContext)
         {
-            repository = MemoryRepository.GetInstance();
+            _dbContext = dbContext;
         }
 
         //// GET: api/Temperature
         [HttpGet(Name = "Get")]
-        public ActionResult<List<Temperature>> Get()
+        public async Task<ActionResult<IEnumerable<Temperature>>> GetProducts()
         {
-            return repository.Temperatures;
+            return await _dbContext.Temperatures.ToListAsync();
         }
 
         // GET: api/Temperature
         [HttpGet(Name = "GetThreeLatest")]
-        public ActionResult<List<Temperature>> GetThreeLatest()
+        public async Task<ActionResult<List<Temperature>>> GetThreeLatest()
         {
-            int max = repository.Temperatures.Count();
+            int max = _dbContext.Temperatures.Count();
             if (max >= 3)
             {
-                return repository.Temperatures.GetRange(max - 3, 3);
+                return _dbContext.Temperatures.OrderBy(t => t.Date).Take(3).ToList();
             }
 
-            return repository.Temperatures;
+            return await _dbContext.Temperatures.ToListAsync();
         }
         // GET: api/Temperature/"Date"
         [HttpGet("{from}/{to}")]
         public ActionResult<List<Temperature>> GetByInterval(DateTime from, DateTime to)
         {
-            return repository.Temperatures.Where(t => t.Date >= from && t.Date <= to ).ToList();
+            return _dbContext.Temperatures.Where(t => t.Date >= from && t.Date <= to ).ToList();
         }
 
         //// GET: api/Temperature/"Date"
         [HttpGet("{day, month, year}")]
         public ActionResult<List<Temperature>> GetByDate(int day, int month, int year)
         {
-            return repository.Temperatures.Where(t => t.Date.Day == day && t.Date.Month == month && t.Date.Year == year).ToList();
+            return _dbContext.Temperatures.Where(t => t.Date.Day == day && t.Date.Month == month && t.Date.Year == year).ToList();
         }
 
         // GET: api/Temperature/5
         [HttpGet("{id}", Name = "GetById")]
-        public ActionResult<Temperature> Get(int id)
+        public async Task<ActionResult<Temperature>> Get(int id)
         {
-            var item = repository[id];
-            if (item == null)
+            var product = await _dbContext.Temperatures.FindAsync(id);
+
+            if (product == null)
             {
                 return NotFound();
             }
-            return item;
+
+            return product;
         }
 
         // POST: api/Temperature
@@ -76,44 +80,65 @@ namespace WebAPITemperature.Controllers
             {
                 return BadRequest();
             }
-            var newTemp = repository.AddTemperature(new Temperature
+            var newTemp = _dbContext.Add(new Temperature
             {
                 TemperatureC = temp.TemperatureC,
                 Humidity = temp.Humidity,
                 Pressure = temp.Pressure
             });
-            return CreatedAtAction("Get", new { id = newTemp.TemperatureId }, newTemp);
+
+            return CreatedAtAction("Get", new { id = newTemp.Entity }, newTemp);
         }
 
         // PUT: api/Temperature/5
         [HttpPut("{id}")]
-        public ActionResult Put(int id, Temperature temp)
+        public async Task<IActionResult> PutProduct(long id, Temperature temperature)
         {
-            if (temp == null || temp.TemperatureId != id)
+            if (id != temperature.TemperatureId)
             {
                 return BadRequest();
             }
-            var item = repository[id];
-            if (item == null)
+
+            _dbContext.Entry(temperature).State = EntityState.Modified;
+
+            try
             {
-                return NotFound();
+                await _dbContext.SaveChangesAsync();
             }
-            repository.UpdateTemperature(temp);
-            return new NoContentResult();
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!TemperatureExist(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
         }
 
         // DELETE: api/Temperature/5
         [HttpDelete("{id}")]
-        public ActionResult Delete(int id)
+        public async Task<ActionResult<Temperature>> DeleteProduct(long id)
         {
-            var item = repository[id];
-            if (item == null)
+            var product = await _dbContext.Temperatures.FindAsync(id);
+            if (product == null)
             {
                 return NotFound();
             }
 
-            repository.DeleteTemperature(id);
-            return new NoContentResult();
+            _dbContext.Temperatures.Remove(product);
+            await _dbContext.SaveChangesAsync();
+
+            return product;
+        }
+
+        private bool TemperatureExist(long id)
+        {
+            return _dbContext.Temperatures.Any(e => e.TemperatureId == id);
         }
     }
 }
