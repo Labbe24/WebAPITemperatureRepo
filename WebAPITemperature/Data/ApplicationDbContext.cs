@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using WebAPITemperature.Models;
 
 namespace WebAPITemperature.Data
 {
@@ -12,6 +13,8 @@ namespace WebAPITemperature.Data
                 : base(options) { }
 
             public DbSet<Temperature> Temperatures { get; set; }
+
+            public DbSet<WebAPITemperature.Models.User> User { get; set; }
             
     }
 }

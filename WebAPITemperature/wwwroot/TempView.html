@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+<h1>Simple ws client</h1>
+<h3>Server counter</h3>
+<label>Server count: </label><input type="text" id="serverCounter" readonly />
+<hr />
+<h3>Chat</h3>
+<ul id="messagesList"></ul>
+<script src="https://unpkg.com/@microsoft/signalr@3.0.1/dist/browser/signalr.js" crossorigin="anonymous"></script>
+<script>
+    var connection = new signalR.HubConnectionBuilder().withUrl("/dataHub").build();
+
+    connection.on("countUpdate", function (count) {
+        console.log("countUpdate: " + count);
+        document.getElementById("serverCounter").value = count;
+    });
+
+    connection.on("ReceiveTemp", function (user, message) {
+        var encodedMsg = user + " says " + message;
+        var li = document.createElement("li");
+        li.textContent = encodedMsg;
+        document.getElementById("messagesList").appendChild(li);
+    });
+
+
+    connection.start().then(function () {
+        console.log("Connected");
+    }).catch(function (err) {
+        console.error(err.toString());
+    });
+</script>
+</body>
+</html>

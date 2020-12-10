@@ -4,11 +4,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Data;
 using WebAPITemperature.Data;
+using WebAPITemperature.Hubs;
 
 namespace WebAPITemperature.Controllers
 {
@@ -17,29 +20,34 @@ namespace WebAPITemperature.Controllers
     public class TemperatureController : ControllerBase
     {
         private readonly ApplicationDbContext _dbContext;
+        private readonly IHubContext<DataHub> _dataHubContext;
 
-        public TemperatureController(ApplicationDbContext dbContext)
+        public TemperatureController(IHubContext<DataHub> dataHubContext, ApplicationDbContext dbContext)
         {
             _dbContext = dbContext;
+            _dataHubContext = dataHubContext;
         }
 
         //// GET: api/Temperature
-        [HttpGet(Name = "Get")]
-        public async Task<ActionResult<IEnumerable<Temperature>>> GetProducts()
-        {
-            return await _dbContext.Temperatures.ToListAsync();
-        }
+        //[HttpGet(Name = "Get")]
+        //public async Task<ActionResult<IEnumerable<Temperature>>> GetProducts()
+        //{
+        //    return await _dbContext.Temperatures.ToListAsync();
+        //}
 
         // GET: api/Temperature
+        // [Authorize]
         [HttpGet(Name = "GetThreeLatest")]
         public async Task<ActionResult<List<Temperature>>> GetThreeLatest()
         {
             int max = _dbContext.Temperatures.Count();
             if (max >= 3)
             {
-                return _dbContext.Temperatures.OrderBy(t => t.Date).Take(3).ToList();
+                await _dataHubContext.Clients.All.SendAsync("ReceiveTemp", _dbContext.Temperatures.OrderByDescending(t => t.TemperatureId).Take(1).ToList());
+                return _dbContext.Temperatures.OrderByDescending(t => t.TemperatureId).Take(3).ToList();
             }
 
+            await _dataHubContext.Clients.All.SendAsync("ReceiveTemp", _dbContext.Temperatures.OrderByDescending(t => t.TemperatureId).Take(1).ToList());
             return await _dbContext.Temperatures.ToListAsync();
         }
         // GET: api/Temperature/"Date"
@@ -48,10 +56,10 @@ namespace WebAPITemperature.Controllers
         {
             return _dbContext.Temperatures.Where(t => t.Date >= from && t.Date <= to ).ToList();
         }
-
+        
         //// GET: api/Temperature/"Date"
-        [HttpGet("{day, month, year}")]
-        public ActionResult<List<Temperature>> GetByDate(int day, int month, int year)
+        [HttpGet("{year}/{month}/{day}")]
+        public ActionResult<List<Temperature>> GetByDate(int year, int month, int day)
         {
             return _dbContext.Temperatures.Where(t => t.Date.Day == day && t.Date.Month == month && t.Date.Year == year).ToList();
         }
@@ -66,7 +74,6 @@ namespace WebAPITemperature.Controllers
             {
                 return NotFound();
             }
-
             return product;
         }
 
@@ -74,20 +81,17 @@ namespace WebAPITemperature.Controllers
         [HttpPost]
         [ProducesResponseType(400)]
         [ProducesResponseType(201)]
-        public ActionResult<Temperature> Post(Temperature temp)
+        public async Task<ActionResult<Temperature>> Post(Temperature temp)
         {
             if (temp == null)
             {
                 return BadRequest();
             }
-            var newTemp = _dbContext.Add(new Temperature
-            {
-                TemperatureC = temp.TemperatureC,
-                Humidity = temp.Humidity,
-                Pressure = temp.Pressure
-            });
 
-            return CreatedAtAction("Get", new { id = newTemp.Entity }, newTemp);
+            _dbContext.Temperatures.Add(temp);
+            await _dbContext.SaveChangesAsync();
+            await _dataHubContext.Clients.All.SendAsync("SendTemp", _dbContext.Temperatures.OrderByDescending(t => t.TemperatureId).Take(1).ToList());
+            return CreatedAtAction("Get", new { id = temp.TemperatureId }, temp);
         }
 
         // PUT: api/Temperature/5

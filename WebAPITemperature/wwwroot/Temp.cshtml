@@ -1,0 +1,68 @@
+﻿@model IEnumerable<WebAPITemperature.Temperature>
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+</head>
+<body>
+    <div>
+        <script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
+        <script src="~/js/chat.js"></script>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>
+                        @Html.DisplayNameFor(model => model.TemperatureId)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Date)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.TemperatureC)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.TemperatureF)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Humidity)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Pressure)
+                    </th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.OrderBy(o => o.Date).TakeLast(3).ToList())
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.TemperatureId)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Date)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.TemperatureC)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.TemperatureF)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Humidity)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Pressure)
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @RenderBody()
+    </div>
+</body>
+</html>

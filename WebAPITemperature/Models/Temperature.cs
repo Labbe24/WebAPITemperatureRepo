@@ -4,7 +4,7 @@ namespace WebAPITemperature
 {
     public class Temperature
     {
-        public long TemperatureId { get; set; }
+        public int TemperatureId { get; set; }
 
         public DateTime Date { get; set; } = DateTime.Now.Date;
 
