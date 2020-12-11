@@ -32,7 +32,7 @@ namespace WebAPITemperature.Tests
                     });
                 context.SaveChanges();
                 
-                var controller = new TemperatureController(context);
+                var controller = new TemperatureController(null, context);
                 var temp = controller.Get(1);
                 Assert.Equal(25, temp.Result.Value.TemperatureC);
             }

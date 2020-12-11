@@ -13,7 +13,7 @@ namespace WebAPITemperature.Hubs
             await Clients.All.SendAsync("ReceiveMessage", user, message);
         }
 
-        public async Task SendTemp(Temperature temp)
+        public async Task SendTemp(List<Temperature> temp)
         {
             await Clients.All.SendAsync("ReceiveTemp", temp);
         }

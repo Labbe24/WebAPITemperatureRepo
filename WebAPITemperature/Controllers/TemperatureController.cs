@@ -43,11 +43,11 @@ namespace WebAPITemperature.Controllers
             int max = _dbContext.Temperatures.Count();
             if (max >= 3)
             {
-                await _dataHubContext.Clients.All.SendAsync("ReceiveTemp", _dbContext.Temperatures.OrderByDescending(t => t.TemperatureId).Take(1).ToList());
+                await _dataHubContext.Clients.All.SendAsync("ReceiveTemp", _dbContext.Temperatures.OrderByDescending(t => t.TemperatureId).Take(3).ToList());
                 return _dbContext.Temperatures.OrderByDescending(t => t.TemperatureId).Take(3).ToList();
             }
 
-            await _dataHubContext.Clients.All.SendAsync("ReceiveTemp", _dbContext.Temperatures.OrderByDescending(t => t.TemperatureId).Take(1).ToList());
+            await _dataHubContext.Clients.All.SendAsync("ReceiveTemp", _dbContext.Temperatures.OrderByDescending(t => t.TemperatureId).Take(3).ToList());
             return await _dbContext.Temperatures.ToListAsync();
         }
         // GET: api/Temperature/"Date"
